@@ -4,7 +4,6 @@
 #include "Win32Display.h"
 #include "bvh.h"
 #include "load_obj_fast.h"
-#include "mesh.h"
 #include "renderer.h"
 #include "sh_lighting.h"
 #include "tracy/Tracy.hpp"

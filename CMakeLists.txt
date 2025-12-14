@@ -28,26 +28,51 @@ if (MSVC)
   target_compile_definitions(fastobj PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
-# your app
-add_executable(raytracer2
-  main.cpp
-  load_obj_fast.cpp
-        bvh.h
-        bvh.cpp
-        renderer.cpp
-        sh_lighting.h
-        sh_lighting.cpp
-)
 
-target_include_directories(raytracer2 PRIVATE ${tracy_SOURCE_DIR}/public)
-target_include_directories(raytracer2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(raytracer2 PRIVATE fastobj)
-target_link_libraries(raytracer2 PUBLIC TracyClient)
 
 if (WIN32)
+    # your app
+    add_executable(raytracer2
+            main.cpp
+            load_obj_fast.cpp
+            bvh.h
+            bvh.cpp
+            renderer.cpp
+            sh_lighting.h
+            sh_lighting.cpp
+            fast_obj.c
+            fast_obj.h
+    )
+
+
+
+    target_include_directories(raytracer2 PRIVATE ${tracy_SOURCE_DIR}/public)
+    target_include_directories(raytracer2 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(raytracer2 PRIVATE fastobj)
+    target_link_libraries(raytracer2 PUBLIC TracyClient)
   # tracy needs winsock + dbghelp
   target_link_libraries(raytracer2 PRIVATE ws2_32 DbgHelp)
   # used for rendering to WIN32 OS windows
   target_link_libraries(raytracer2 PRIVATE gdi32 user32)
 endif()
 
+add_executable(render_to_ppm
+        render_to_file.cpp
+        load_obj_fast.cpp
+        bvh.h
+        bvh.cpp
+        renderer.cpp
+        sh_lighting.h
+        sh_lighting.cpp
+        fast_obj.c
+        fast_obj.h
+)
+
+target_include_directories(render_to_ppm PRIVATE ${tracy_SOURCE_DIR}/public)
+target_include_directories(render_to_ppm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(render_to_ppm PRIVATE fastobj)
+target_link_libraries(render_to_ppm PUBLIC TracyClient)
+
+if (WIN32)
+    target_link_libraries(render_to_ppm PRIVATE ws2_32 DbgHelp)
+endif()

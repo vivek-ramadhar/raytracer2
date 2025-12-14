@@ -4,33 +4,26 @@
 #include "mesh.h"
 #include "tracy/Tracy.hpp"
 #include "vmath.h"
-#include <immintrin.h>
 
 #ifndef BVH_H
 #define BVH_H
 
-#ifndef ALIGN
+#ifndef RAYTRACER_ALIGN
 #if defined(_MSC_VER)
-#define ALIGN(x) __declspec(align(x))
+#define RAYTRACER_ALIGN(x) __declspec(align(x))
 #else
-#define ALIGN(x) __attribute__((aligned(x)))
+#define RAYTRACER_ALIGN(x) __attribute__((aligned(x)))
 #endif
 #endif
 
-ALIGN(64) struct BVHNode {
-  union {
-    struct {
-      float3 aabbMin;
-      uint32_t leftFirst;
-    };
-    __m128 aabbMin4;
+RAYTRACER_ALIGN(64) struct BVHNode {
+  struct {
+    float3 aabbMin;
+    uint32_t leftFirst;
   };
-  union {
-    struct {
-      float3 aabbMax;
-      uint32_t triCount;
-    };
-    __m128 aabbMax4;
+  struct {
+    float3 aabbMax;
+    uint32_t triCount;
   };
   bool isLeaf() const { return triCount > 0; }
 };
