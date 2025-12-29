@@ -10,7 +10,9 @@
 #include "load_obj_fast.h"
 #include "renderer.h"
 #include "sh_lighting.h"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
 
 void SaveAsPPM(const std::string& filename, const uchar* bgr, int width, int height) {
     std::ofstream file(filename, std::ios::binary);
@@ -39,7 +41,9 @@ static inline void frameCameraToAABB(Camera &cam, const AABB &bbox,
                                      float3 view_dir = {0, 0, -1},
                                      float3 up_hint = {0, 1, 0},
                                      float margin = 1.2f) {
-    ZoneScopedN("frameCameraToAABB");
+	#ifdef TRACY_ENABLE
+    	ZoneScopedN("frameCameraToAABB");
+	#endif
     float r = __max(0.001f, bbox.radius());
     float fovx = 2.0f * atanf(tanf(fovy_rads * 0.5f) * aspect);
     float d_v = r / tanf(fovy_rads * 0.5f);
@@ -67,8 +71,25 @@ static inline void frameCameraToAABB(Camera &cam, const AABB &bbox,
     cam.far_plane = d + 1.5f * r;
 }
 
-int main(int argc, char** argv) {
+void setupCornellCamera(Camera &cam, float fovy_rads, float aspect, float3 cam_pos) {
+    //cam.pos = {0.0f, 0.0f, 0.9f};
+    cam.pos = cam_pos;
+    cam.forward = {0.0f, 0.0f, -1.0f};
+    cam.dir = cam.forward;
+    cam.right = {1.0f, 0.0f, 0.0f};
+    cam.up = {0.0f, 1.0f, 0.0f};
+    cam.fovy = fovy_rads;
+    cam.aspect = aspect;
+    cam.near_plane = 0.01f;
+    cam.far_plane = 10.0f;
+    printf("Camera: pos=(%.2f, %.2f, %.2f) fov=%.1fdeg\n", cam.pos.x, cam.pos.y, cam.pos.z, cam.fovy*57.3f);
+}
+
+// USAGE: ./render_to_ppm ./file_name.obj
+// Assumes .mtl is in same directory and has the file name as .obj
+int render(int argc, char** argv) {
     std::string file = argv[1];
+    std::string filename = file.substr(0, file.length()-4);
     const int W = 1920, H = 1080;
     Camera cam;
     AABB sceneBounds;
@@ -91,11 +112,19 @@ int main(int argc, char** argv) {
     std::cout << "scene: " << scene.size() << " meshes, " << tris << " tris, "
                 << verts << " verts\n";
 
-    frameCameraToAABB(cam, sceneBounds, radians(50.0f), float(W)/float(H),
-                      float3{0.5, -0.5, 0.5f}, float3{0, 1, 0}, 1.4f);
+    //frameCameraToAABB(cam, sceneBounds, radians(50.0f), float(W)/float(H),
+    //                  float3{0.5, -0.5, 0.5f}, float3{0, 1, 0}, 1.4f);
+    float fovy_rads = radians(55.0f);
+    float aspect = float(W) / float(H);
+    setupCornellCamera(cam, fovy_rads, aspect, float3{0.0f, 0.0f, 1.9f});
 
     uchar pixel_buffer[W*H*3];
     render_bgr24(scene, bvh, mats, sh, cam, W, H, pixel_buffer);
-    SaveAsPPM("output.ppm", pixel_buffer, W, H);
+    std::string output = filename + ".ppm";
+    SaveAsPPM(output, pixel_buffer, W, H);
     return 0;
+}
+
+int main(int argc, char** argv) {
+	return render(argc, argv);
 }
