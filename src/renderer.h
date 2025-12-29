@@ -4,7 +4,11 @@
 
 #include "bvh.h"
 #include "mesh.h"
+
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
+
 #include <algorithm>
 
 #include "sh_lighting.h"

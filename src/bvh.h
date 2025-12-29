@@ -2,7 +2,11 @@
 // Created by vivek on 11/5/2025.
 //
 #include "mesh.h"
+
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
+
 #include "vmath.h"
 
 #ifndef BVH_H
@@ -16,7 +20,7 @@
 #endif
 #endif
 
-RAYTRACER_ALIGN(64) struct BVHNode {
+struct RAYTRACER_ALIGN(64) BVHNode {
   struct {
     float3 aabbMin;
     uint32_t leftFirst;

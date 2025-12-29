@@ -3,10 +3,14 @@
 //
 #include "bvh.h"
 #include "renderer.h"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
 
 void BVH::buildFromScene(const std::vector<TriangleMesh> &scene, int leafSize) {
-  ZoneScopedN("BuildBVH");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("BuildBVH");
+  #endif
 
   // flatten scene -> tri/triIdx
   size_t N = 0;

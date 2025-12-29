@@ -6,7 +6,9 @@
 #include <cmath>
 #include <iostream>
 
-#include "cmake-build-debug/_deps/tracy-src/public/tracy/Tracy.hpp"
+#ifdef TRACY_ENABLE
+#include "tracy/Tracy.hpp"
+#endif
 #include "nittygritty.h"
 
 static constexpr double kPi = 3.14159265358979323846;
@@ -34,7 +36,9 @@ static double sky_dir(double theta, double phi) {
 }
 
 void init_sh_context(SHContext &ctx, const double lightIntensity) {
-  ZoneScopedN("init_sh_context");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("init_sh_context");
+  #endif
   ctx.samples.resize(SH_SAMPLES);
   SH_setup_spherical_samples(ctx.samples, SH_SQRT_SAMPLES, SH_BANDS);
   std::vector<double> tmp(SH_COEFFS);
@@ -106,7 +110,9 @@ static void compute_diffuse_unshadowed_transfer(const SHContext &ctx,
 void bake_diffuse_unshadowed_transfers(const std::vector<TriangleMesh> &scene,
                                        const Materials &materials,
                                        SHContext &ctx) {
-  ZoneScopedN("bake_diffuse_unshadowed_transfers");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("bake_diffuse_unshadowed_transfers");
+  #endif
   ctx.meshTransfers.clear();
   ctx.meshTransfers.resize(scene.size());
 
@@ -165,7 +171,9 @@ void compute_diffuse_shadowed_transfer(const SHContext &ctx, const BVH &bvh,
                                        const float3 &position,
                                        const float3 &normal,
                                        SHTransfer &outTransfer) {
-  ZoneScopedN("compute_diffuse_shadowed_transfer");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("compute_diffuse_shadowed_transfer");
+  #endif
   for (double &c : outTransfer.coeff)
     c = 0.0;
 
@@ -190,7 +198,9 @@ void compute_diffuse_shadowed_transfer(const SHContext &ctx, const BVH &bvh,
     Hit h;
     {
       // Fast BVH made this whole function really fast!
-      ZoneScopedN("bvh.intersect - diffuse_shadowed_transfer");
+      #ifdef TRACY_ENABLE
+        ZoneScopedN("bvh.intersect - diffuse_shadowed_transfer");
+      #endif
       if (bvh.intersect(ray, h)) {
         continue; // V = 0
       }
@@ -218,7 +228,9 @@ void bake_diffuse_shadowed_transfers(const std::vector<TriangleMesh> &scene,
                                      const Materials &materials, const BVH &bvh,
                                      SHContext &ctx) {
   {
-    ZoneScopedN("bake_diffuse_shadowed_transfers");
+    #ifdef TRACY_ENABLE
+      ZoneScopedN("bake_diffuse_shadowed_transfers");
+    #endif
 
     ctx.meshTransfers.clear();
     ctx.meshTransfers.resize(scene.size());
@@ -350,7 +362,9 @@ void compute_self_transfer_bounce(
 void bake_interreflected_transfers(const std::vector<TriangleMesh> &scene,
                                    const Materials &materials, const BVH &bvh,
                                    SHContext &ctx, int numBounces) {
-  ZoneScopedN("bake_interreflected_transfers");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("bake_interreflected_transfers");
+  #endif
   std::vector<std::vector<SHTransfer>> prevBounce = ctx.meshTransfers;
   for (int bounce = 0; bounce < numBounces; ++bounce) {
     std::vector<std::vector<SHTransfer>> nextBounce;

@@ -5,14 +5,18 @@
 
 #include "mesh.h"
 #include "sh_lighting.h"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
 //
 // Created by vivek on 11/5/2025.
 //
 void render_bgr24(const std::vector<TriangleMesh> &scene,
                   const Materials &materials, const Camera &cam, int W, int H,
                   unsigned char *bgr) {
-  ZoneScopedN("render_bgr24");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("render_bgr24");
+  #endif
   const float tanHalfFovY = tanf(cam.fovy * 0.5f);
   const float sx = cam.aspect * tanHalfFovY;
   const float sy = tanHalfFovY;
@@ -39,7 +43,9 @@ void render_bgr24(const std::vector<TriangleMesh> &scene,
 
       Hit h;
       {
-        ZoneScopedN("intersectSceneLinear");
+        #ifdef TRACY_ENABLE
+          ZoneScopedN("intersectSceneLinear");
+        #endif
         if (intersectSceneLinear(scene, r, h)) {
           const TriangleMesh &M = scene[h.mesh];
           const Triangle &T = M.tris[h.tri];
