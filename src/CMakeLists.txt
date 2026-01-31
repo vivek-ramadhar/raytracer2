@@ -7,6 +7,8 @@ add_library(raytracer_core STATIC
         load_obj_fast.h
         sh_lighting.cpp
         sh_lighting.h
+        multicore.h
+        base_win32.h
 )
 
 add_library(fastobj STATIC
@@ -16,7 +18,7 @@ add_library(fastobj STATIC
 
 target_include_directories(fastobj PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 if (MSVC)
-    target_compile_directories(fastobj PRIVATE _CRT_SECURE_NO_WARNINGS)
+    target_compile_definitions(fastobj PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
 target_link_libraries(raytracer_core PUBLIC fastobj)
