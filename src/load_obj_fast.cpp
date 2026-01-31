@@ -4,7 +4,11 @@
 #include <string>
 
 #include "mesh.h"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
+#endif
+
+
 //
 // Created by vivek on 10/31/2025.
 //
@@ -73,7 +77,9 @@ bool load_meshes_fastobj(const std::string &path, std::vector<Mesh> &out,
 bool load_triangle_meshes_fastobj(const std::string &path,
                                   std::vector<TriangleMesh> &outMeshes,
                                   Materials &outMats, AABB &sceneBounds) {
-  ZoneScopedN("load_triangle_mesh_fastobj");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("load_triangle_mesh_fastobj");
+  #endif
   fastObjMesh *om = fast_obj_read(path.c_str());
   if (!om)
     return false;

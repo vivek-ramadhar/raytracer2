@@ -3,11 +3,14 @@
 //
 #include "bvh.h"
 #include "renderer.h"
+#ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
-#include <immintrin.h>
+#endif
 
 void BVH::buildFromScene(const std::vector<TriangleMesh> &scene, int leafSize) {
-  ZoneScopedN("BuildBVH");
+  #ifdef TRACY_ENABLE
+    ZoneScopedN("BuildBVH");
+  #endif
 
   // flatten scene -> tri/triIdx
   size_t N = 0;
@@ -18,7 +21,7 @@ void BVH::buildFromScene(const std::vector<TriangleMesh> &scene, int leafSize) {
   triIdx.clear();
   triIdx.resize(N);
   nodes.clear();
-  nodes.resize(__max(1, 2 * N));
+  nodes.resize(std::max(1, static_cast<int>(2*N)));
   nodesUsed = 1;
 
   size_t w = 0;
@@ -61,10 +64,6 @@ void BVH::UpdateNodeBounds(uint32_t nodeIdx) {
     node.aabbMax = fmaxf(node.aabbMax, leafTri.vertex1);
     node.aabbMax = fmaxf(node.aabbMax, leafTri.vertex2);
   }
-  node.aabbMin4 =
-      _mm_set_ps(-INFINITY, node.aabbMin.z, node.aabbMin.y, node.aabbMin.x);
-  node.aabbMax4 =
-      _mm_set_ps(+INFINITY, node.aabbMax.z, node.aabbMax.y, node.aabbMax.x);
 }
 
 float BVH::EvaluateSAH(BVHNode &node, int axis, float pos) {
@@ -205,12 +204,12 @@ static inline bool hitAABB(const float3 &bmin, const float3 &bmax, const Ray &r,
   const float3 invD = {1.0f / r.d.x, 1.0f / r.d.y, 1.0f / r.d.z};
   const float3 t0 = (bmin - r.o) * invD;
   const float3 t1 = (bmax - r.o) * invD;
-  const float3 tminv = {__min(t0.x, t1.x), __min(t0.y, t1.y),
-                        __min(t0.z, t1.z)};
-  const float3 tmaxv = {__max(t0.x, t1.x), __max(t0.y, t1.y),
-                        __max(t0.z, t1.z)};
-  float tmin = __max(__max(tminv.x, tminv.y), __max(0.0f, tminv.z));
-  float tmax2 = __min(__min(tmaxv.x, tmaxv.y), tmaxv.z);
+  const float3 tminv = {std::min(t0.x, t1.x), std::min(t0.y, t1.y),
+                        std::min(t0.z, t1.z)};
+  const float3 tmaxv = {std::max(t0.x, t1.x), std::max(t0.y, t1.y),
+                        std::max(t0.z, t1.z)};
+  float tmin = std::max(std::max(tminv.x, tminv.y), std::max(0.0f, tminv.z));
+  float tmax2 = std::min(std::min(tmaxv.x, tmaxv.y), tmaxv.z);
   return (tmax2 >= tmin) && (tmin < tmax);
 }
 
