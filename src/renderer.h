@@ -4,13 +4,7 @@
 
 #include "bvh.h"
 #include "mesh.h"
-
-#ifdef TRACY_ENABLE
-#include "tracy/Tracy.hpp"
-#endif
-
 #include <algorithm>
-
 #include "sh_lighting.h"
 
 inline bool intersectTriMT(const Ray& r, const float3& p0, const float3& p1, const float3& p2,
@@ -140,4 +134,8 @@ void render_bgr24(const std::vector<TriangleMesh>& scene, const BVH& bvh, const 
                   int W, int H, unsigned char* bgr);
 
 void render_bgr24(const std::vector<TriangleMesh>& scene, const BVH& bvh, const Materials& materials,
-                  const SHContext& sh, const Camera& cam, int W, int H, unsigned char* bgr);
+                  const SHContext& sh, const Camera& cam, const int W, const int H, unsigned char *bgr);
+
+void render_bgr24_mt(const std::vector<TriangleMesh>& scene, const BVH& bvh, const Materials& materials,
+                  const SHContext& sh, const Camera& cam, const int W, const int H, unsigned char* bgr,
+                  int num_threads);
