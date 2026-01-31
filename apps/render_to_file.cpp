@@ -14,7 +14,7 @@
 #include "tracy/Tracy.hpp"
 #endif
 
-void SaveAsPPM(const std::string& filename, const uchar* bgr, int width, int height) {
+void SaveAsPPM(const std::string& filename, const std::vector<uchar> bgr, int width, int height) {
     std::ofstream file(filename, std::ios::binary);
     if (!file.is_open()) {
         std::clog << "Failed to open file for writing: " << filename << "\n";
@@ -86,9 +86,8 @@ void setupCornellCamera(Camera &cam, float fovy_rads, float aspect, float3 cam_p
 }
 
 // USAGE: ./render_to_ppm ./file_name.obj
-// Assumes .mtl is in same directory and has the file name as .obj
-int render(int argc, char** argv) {
-    std::string file = argv[1];
+// Assumes .mtl is in same directory and has the same file name as .obj
+int render_obj(std::string &file) {
     std::string filename = file.substr(0, file.length()-4);
     const int W = 1920, H = 1080;
     Camera cam;
@@ -118,13 +117,14 @@ int render(int argc, char** argv) {
     float aspect = float(W) / float(H);
     setupCornellCamera(cam, fovy_rads, aspect, float3{0.0f, 0.0f, 1.9f});
 
-    uchar pixel_buffer[W*H*3];
-    render_bgr24(scene, bvh, mats, sh, cam, W, H, pixel_buffer);
+    std::vector<uchar> pixel_buffer(W*H*3);
+    render_bgr24(scene, bvh, mats, sh, cam, W, H, pixel_buffer.data());
     std::string output = filename + ".ppm";
     SaveAsPPM(output, pixel_buffer, W, H);
     return 0;
 }
 
 int main(int argc, char** argv) {
-	return render(argc, argv);
+    std::string file = argv[1];
+    return render_obj(file);
 }
