@@ -6,7 +6,7 @@
 #include "multicore.h"
 
 #ifdef TRACY_ENABLE
-#include "Tracy.hpp"
+#include <tracy/Tracy.hpp>
 #endif
 //
 // Created by vivek on 11/5/2025.
@@ -185,10 +185,12 @@ void render_bgr24(const std::vector<TriangleMesh> &scene, const BVH &bvh,
   const float sx = cam.aspect * tanHalfFovY;
   const float sy = tanHalfFovY;
 
-  auto write = [&](const int x, const int y, const float3 &c_lin) {
-    const float r = srgb::from_linear(clamp(c_lin.x, 0.0f, 1.0f));
-    const float g = srgb::from_linear(clamp(c_lin.y, 0.0f, 1.0f));
-    const float b = srgb::from_linear(clamp(c_lin.z, 0.0f, 1.0f));
+  auto write = [&](const int x, const int y, const float3 &c_raw_hdr) {
+    float3 c_mapped = c_raw_hdr / (c_raw_hdr + float3(1.0f));
+
+    const float r = srgb::from_linear(clamp(c_mapped.x, 0.0f, 1.0f));
+    const float g = srgb::from_linear(clamp(c_mapped.y, 0.0f, 1.0f));
+    const float b = srgb::from_linear(clamp(c_mapped.z, 0.0f, 1.0f));
     const int idx = 3 * (y * W + x);
     bgr[idx + 0] = static_cast<unsigned char>(std::round(255.0f * b));
     bgr[idx + 1] = static_cast<unsigned char>(std::round(255.0f * g));
@@ -298,7 +300,17 @@ void render_bgr24_mt(const std::vector<TriangleMesh>& scene, const BVH& bvh, con
           if (T.material >= 0 && T.material < static_cast<int>(materials.Kd_linear.size())) {
             albedo = materials.Kd_linear[T.material];
           }
+          bool is_light_source = (albedo.x > 0.99f && albedo.y > 0.99f && albedo.z > 0.99f);
+          if (is_light_source) {
+            const int idx = 3 * (y * W + x);
+            bgr[idx] = 255;
+            bgr[idx+1] = 255;
+            bgr[idx+2] = 255;
+            continue;
+          }
+
           float3 color = irradiance * albedo;
+          color = color / (color + float3(1.0f));
 
           const float r_srgb = srgb::from_linear(clamp(color.x, 0.0f, 1.0f));
           const float g_srgb = srgb::from_linear(clamp(color.y, 0.0f, 1.0f));

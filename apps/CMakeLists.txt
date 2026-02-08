@@ -13,9 +13,17 @@ if(ENABLE_TRACY)
 endif()
 
 if (WIN32)
+    add_definitions(-DUNICODE -D_UNICODE)
     add_executable(raytracer2
-            main.cpp
+            WIN32
+#            main.cpp
+#            ../src/LearnWin32BaseWindow.h
+            main2.cpp
+            ../src/orbit_camera.h
     )
+#
+    set_target_properties(raytracer2 PROPERTIES WIN32_EXECUTABLE TRUE
+                                                LINK_FLAGS "/ENTRY:wmainCRTStartup")
 
     target_link_libraries(raytracer2 PRIVATE raytracer_core)
     target_link_libraries(raytracer2 PRIVATE gdi32 user32)
