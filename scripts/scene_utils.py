@@ -33,6 +33,16 @@ def create_material(name, color, emission=0.0):
     mat.diffuse_color = (*color, 1.0)
     return mat
 
+def subdivide_object(obj, cuts=10):
+    bpy.context.view_layer.objects.active = obj
+
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.subdivide(number_cuts=cuts)
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    bpy.ops.object.modifier_add(type='TRIANGULATE')
+    bpy.ops.object.modifier_apply(modifier="Triangulate")
+
 def create_quad(name, vertices, material, flip_normal=False):
     mesh = bpy.data.meshes.new(name + "_mesh")
     obj = bpy.data.objects.new(name, mesh)
@@ -50,6 +60,7 @@ def create_quad(name, vertices, material, flip_normal=False):
     bm.free()
 
     obj.data.materials.append(material)
+    subdivide_object(obj, cuts=20)
 
     return obj
 
@@ -66,6 +77,7 @@ def create_box(name, center, size, material, rotation_z=0):
 
     obj.data.materials.clear()
     obj.data.materials.append(material)
+    subdivide_object(obj, cuts=20)
 
     return obj
 
@@ -73,81 +85,86 @@ def create_cornell_box():
     half = ROOM_SIZE / 2
 
     # mats
-    mat_white = create_material("white", (0.73, 0.73, 0.73))
-    mat_red = create_material("red", (0.65, 0.05, 0.05))
-    mat_green = create_material("green", (0.12, 0.45, 0.15))
-    mat_light = create_material("light", (1.0, 1.0, 1.0), emission=15.0)
+    mat_white = create_material("white", (0.6, 0.6, 0.6))
+    mat_red = create_material("red", (0.85, 0.05, 0.05))
+    mat_green = create_material("green", (0.12, 0.85, 0.15))
+    mat_light = create_material("light", (1.0, 1.0, 1.0)) #, emission=15.0
 
-    # Y = -half (normal points up)
+    # Floor: Z = -half (normal points up +Z)
     create_quad(
         "floor",
-        [(-half, -half, -half), (half, -half, -half), (half, -half, half), (-half, -half, half)],
+        [(-half, -half, -half), (half, -half, -half), (half, half, -half), (-half, half, -half)],
         mat_white,
-        flip_normal=True
+        flip_normal=False # Standard CCW winding for Up normal
     )
 
-    # Y = +half (normal points down)
+    # Ceiling: Z = +half (Normal points Down -Z)
     create_quad(
         "ceiling",
-        [(-half, half, -half), (-half, half, half), (half, half, half), (half, half, -half)],
+        [(-half, -half, half), (-half, half, half), (half, half, half), (half, -half, half)],
         mat_white,
-        flip_normal=True
+        flip_normal=False
     )
 
-    # Z = -half (normal points to cam)
+    # Back Wall: Y = +half (Normal points -Y towards origin)
+    # Note: In Blender, +Y is "Back", -Y is "Front".
+    # We want the wall at the "back" of the room relative to a front view.
     create_quad(
         "back_wall",
-        [(-half, -half, -half), (-half, half, -half), (half, half, -half), (half, -half, -half)],
+        [(-half, half, -half), (half, half, -half), (half, half, half), (-half, half, half)],
         mat_white,
-        flip_normal=True
+        flip_normal=False
     )
 
-    # X = -half (normal points right)
+    # Left Wall (Red): X = -half (Normal points Right +X)
     create_quad(
         "left_wall",
-        [(-half, -half, -half), (-half, -half, half), (-half, half, half), (-half, half, -half)],
+        [(-half, -half, -half), (-half, half, -half), (-half, half, half), (-half, -half, half)],
         mat_red,
-        flip_normal=True
+        flip_normal=False
     )
 
-    # X = half (normal points left)
+    # Right Wall (Green): X = +half (Normal points Left -X)
     create_quad(
         "right_wall",
-        [(half, -half, -half), (half, half, -half), (half, half, half), (half, -half, half)],
+        [(half, -half, -half), (half, -half, half), (half, half, half), (half, half, -half)],
         mat_green,
-        flip_normal=True
+        flip_normal=False
     )
 
+    # Light: Small patch on Ceiling
     light_size = 0.3
-    light_y = half - 0.001
+    light_z = half - 0.001
     create_quad(
         "light",
-        [(-light_size, light_y, -light_size), (-light_size, light_y, light_size),
-         (light_size, light_y, light_size), (light_size, light_y, -light_size)],
+        [(-light_size, -light_size, light_z), (light_size, -light_size, light_z),
+         (light_size, light_size, light_z), (-light_size, light_size, light_z)],
         mat_light,
-        flip_normal=True
+        flip_normal=True # Flip to point down
     )
 
+    # Tall Box
+    # Swapped Y and Z coordinates for Blender
     tall_box_height = 0.6
     tall_box = create_box(
         "tall_box",
-        center=(0.35, -half+tall_box_height/2, -0.35),
-        size=(0.3, tall_box_height, 0.3),
-        material=mat_white,
-        rotation_z=math.radians(18)
-    )
-
-    short_box_height = 0.3
-    short_box = create_box(
-        "short_box",
-        center=(-0.35, -half+short_box_height/2, 0.3),
-        size=(0.3, short_box_height, 0.3),
+        center=(0.35, 0.35, -half + tall_box_height/2),
+        size=(0.3, 0.3, tall_box_height), # Width, Depth, Height
         material=mat_white,
         rotation_z=math.radians(-18)
     )
 
+    # Short Box
+    short_box_height = 0.3
+    short_box = create_box(
+        "short_box",
+        center=(-0.35, -0.3, -half + short_box_height/2),
+        size=(0.3, 0.3, short_box_height),
+        material=mat_white,
+        rotation_z=math.radians(18)
+    )
 def setup_camera():
-    bpy.ops.object.camera_add(location=(0, 0, ROOM_SIZE * 2), rotation=(0, 0, 0))
+    bpy.ops.object.camera_add(location=(0, -ROOM_SIZE * 2, 0), rotation=(math.radians(90), 0, 0))
     camera = bpy.context.active_object
     camera.data.lens = 35
     bpy.context.scene.camera = camera
