@@ -10,9 +10,25 @@
 #include "load_obj_fast.h"
 #include "renderer.h"
 #include "sh_lighting.h"
+#include <cstdio>
 #ifdef TRACY_ENABLE
 #include "tracy/Tracy.hpp"
 #endif
+
+void save_via_ffmpeg(const unsigned char* data, int width, int height, const char* filename) {
+    char command[512];
+    sprintf(command,
+        "ffmpeg -y -f rawvideo -pixel_format rgb24 -video_size %dx%d -i - $s",
+        width, height, filename);
+    FILE* pipe = _popen(command, "w");
+
+    if (!pipe) {
+        std::cerr << "ERROR: Could not open pipe to ffmpeg." << std::endl;
+        return;
+    }
+    fwrite(data, 1, width*height*3, pipe);
+    _pclose(pipe);
+}
 
 void SaveAsPPM(const std::string& filename, const std::vector<uchar> bgr, int width, int height) {
     std::ofstream file(filename, std::ios::binary);
