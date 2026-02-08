@@ -4,8 +4,19 @@
 #ifndef RAYTRACER2_BASE_WIN32_H
 #define RAYTRACER2_BASE_WIN32_H
 #include <iostream>
+#include <string>
 #include <memory>
 #include <windows.h>
+#include <cstdio>
+
+
+
+
+#ifdef TRACY_ENABLE
+#include "client/TracyProfiler.hpp"
+#include "client/TracyScoped.hpp"
+#include <tracy/Tracy.hpp>
+#endif
 
 template <class DERIVED_TYPE>
 class BaseWindow {
@@ -50,9 +61,9 @@ public:
         HMENU hMenu = 0
         )
     {
-        WNDCLASSEX wc = {0};
+        WNDCLASSEXW wc = {0};
 
-        wc.cbSize = sizeof(WNDCLASSEX);
+        wc.cbSize = sizeof(WNDCLASSEXW);
         wc.lpfnWndProc = DERIVED_TYPE::WindowProc;
         wc.hInstance = GetModuleHandle(NULL);
         wc.lpszClassName = ClassName();
@@ -60,10 +71,15 @@ public:
         wc.hCursor = LoadCursor(NULL, IDC_ARROW);
         wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
 
-        if (!RegisterClassEx(&wc)) return false;
+        if (!RegisterClassExW(&wc)) return false;
 
-        m_hwnd = CreateWindowEx(dwExStyle, wc.lpszClassName, lpWindowName, dwStyle, x, y,
+        m_hwnd = CreateWindowExW(dwExStyle, wc.lpszClassName, lpWindowName, dwStyle, x, y,
                                 nWidth, nHeight, hWndParent, hMenu, wc.hInstance, this);
+
+        if (m_hwnd) {
+            ShowWindow(m_hwnd, SW_SHOW);
+            UpdateWindow(m_hwnd);
+        }
 
         return (m_hwnd ? TRUE : FALSE);
     }
@@ -87,9 +103,26 @@ protected:
     HWND m_hwnd;
 };
 
+void save_via_ffmpeg(const unsigned char* data, int width, int height, const char* filename, const char* img_format) {
+    char command[512];
+    sprintf(command,
+        "ffmpeg -y -f rawvideo -pixel_format bgr24 -video_size %dx%d -i - -frames:v 1 -update 1 \"%s%s\"",
+        width, height, filename, img_format);
+    FILE* pipe = _popen(command, "wb");
+
+    if (!pipe) {
+        std::cerr << "ERROR: Could not open pipe to ffmpeg." << std::endl;
+        return;
+    }
+    size_t total_size = static_cast<size_t>(width) * height * 3;
+    fwrite(data, 1, total_size, pipe);
+    fflush(pipe);
+    _pclose(pipe);
+}
+
 class StaticWindow : public BaseWindow<StaticWindow> {
 public:
-    StaticWindow(const int width, const int height, const wchar_t* title) : m_width(width), m_height(height), m_window_title(title) {}
+    StaticWindow(const int width, const int height, PCWSTR title) : m_width(width), m_height(height), m_window_title(title) {}
     ~StaticWindow() {
         if (m_hdc_offscreen) DeleteDC(m_hdc_offscreen);
         if (m_h_bitmap) DeleteObject(m_h_bitmap);
@@ -112,6 +145,9 @@ public:
                     std::clog << "Quitting" << "\n";
                     DestroyWindow(m_hwnd);
                     return 0;
+                } else if (wParam == 'S') {
+                    std::string fname = "assets/images/sh_render" + std::to_string(m_width) + "x" + std::to_string(m_height);
+                    save_via_ffmpeg(m_pixel_buffer.get(), m_width, m_height, fname.c_str(), ".png");
                 }
                 break;
 
@@ -144,6 +180,9 @@ public:
     }
 
     void update_window() {
+#ifdef TRACY_ENABLE
+        ZoneScoped;
+#endif
         // copy software buffer to DIB buffer
         std::memcpy(m_p_bits, m_pixel_buffer.get(), m_width*m_height*3);
 
