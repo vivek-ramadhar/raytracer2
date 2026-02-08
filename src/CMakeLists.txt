@@ -23,6 +23,14 @@ endif()
 
 target_link_libraries(raytracer_core PUBLIC fastobj)
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(raytracer_core PUBLIC OpenMP::OpenMP_CXX)
+    message(STATUS "OpenMP found — parallel baking enabled")
+else()
+    message(WARNING "OpenMP NOT found — baking will be single-threaded")
+endif()
+
 if (ENABLE_TRACY)
     target_include_directories(raytracer_core PRIVATE ${tracy_SOURCE_DIR}/public)
     target_link_libraries(raytracer_core PUBLIC TracyClient)
