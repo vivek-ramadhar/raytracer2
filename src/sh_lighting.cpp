@@ -3,7 +3,6 @@
 //
 #include "sh_lighting.h"
 #include <algorithm>
-#include <cmath>
 #include <iostream>
 
 #ifdef TRACY_ENABLE
@@ -273,6 +272,7 @@ void bake_diffuse_shadowed_transfers(const std::vector<TriangleMesh> &scene,
         vertNormal[T.i2] += faceN;
       }
 
+#pragma omp parallel for schedule(dynamic, 64)
       for (int v = 0; v < nVerts; ++v) {
         float3 normal = vertNormal[v];
         float len2 = dot(normal, normal);
@@ -365,6 +365,7 @@ void bake_interreflected_transfers(const std::vector<TriangleMesh> &scene,
   #ifdef TRACY_ENABLE
     ZoneScopedN("bake_interreflected_transfers");
   #endif
+
   std::vector<std::vector<SHTransfer>> prevBounce = ctx.meshTransfers;
   for (int bounce = 0; bounce < numBounces; ++bounce) {
     std::vector<std::vector<SHTransfer>> nextBounce;
@@ -393,6 +394,7 @@ void bake_interreflected_transfers(const std::vector<TriangleMesh> &scene,
         vertNormal[T.i2] += faceN;
       }
 
+#pragma omp parallel for schedule(dynamic, 64)
       for (int v = 0; v < nVerts; ++v) {
         float3 normal = vertNormal[v];
         float len2 = dot(normal, normal);
